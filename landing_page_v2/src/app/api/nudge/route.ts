@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
   if (recipientUser?.user?.email) {
     try {
       await getResend().emails.send({
-        from: "TribeTask <noreply@tribetask.app>",
+        from: "TribeTask <onboarding@resend.dev>",
         to: recipientUser.user.email,
         subject: `👋 ${senderMember?.display_name || "A teammate"} nudged you about: ${task.title}`,
         react: NudgeEmail({
