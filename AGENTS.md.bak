@@ -1,0 +1,586 @@
+# TribeTask — AGENTS.md
+
+> **TribeTask** is a responsive web SaaS for families and roommates to share, plan, and track household chores without hassle.
+> Date: 2026-02-21 | Maintainer: TribeTask Engineering
+
+---
+
+## Table of Contents
+1. [Project Overview](#1-project-overview)
+2. [Tech Stack](#2-tech-stack)
+3. [Architecture](#3-architecture)
+4. [Core Features](#4-core-features)
+5. [Database Schema](#5-database-schema)
+6. [Accessibility Standards](#6-accessibility-standards)
+7. [Engineering Best Practices](#7-engineering-best-practices)
+8. [Folder Structure](#8-folder-structure)
+9. [Environment Variables](#9-environment-variables)
+10. [Deployment](#10-deployment)
+
+---
+
+## 1. Project Overview
+
+TribeTask helps households stay organized by distributing chores fairly, allowing members to claim tasks, sending smart nudges and reminders, and gamifying participation via a leaderboard. It targets families and roommates who want a lightweight, real-time shared task management experience.
+
+**Design Principles:**
+- Mobile-first, fully responsive UI
+- Accessible to all users (WCAG 2.1 AA)
+- Real-time updates without page refreshes
+- Fair and transparent task distribution
+
+---
+
+## 2. Tech Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Frontend Framework** | [Next.js 14+ (App Router)](https://nextjs.org) | SSR, SSG, API routes, routing |
+| **Styling** | [Tailwind CSS v3](https://tailwindcss.com) | Utility-first responsive styling |
+| **Backend / Database** | [Supabase](https://supabase.com) | PostgreSQL DB, Auth, Realtime, Storage |
+| **Deployment** | [Vercel](https://vercel.com) | Hosting, edge functions, CI/CD previews |
+| **Language** | TypeScript | Type safety across the full stack |
+| **ORM / Query** | Supabase JS Client + typed queries | Database interactions |
+| **State Management** | React Context + `use` hooks / Zustand (if needed) | UI state |
+| **Forms** | React Hook Form + Zod | Validation and form handling |
+| **Notifications** | Supabase Realtime + Web Push API | Nudges and reminders |
+| **Testing** | Vitest + React Testing Library + Playwright | Unit, integration, E2E |
+| **Linting** | ESLint + Prettier | Code quality and formatting |
+
+---
+
+## 3. Architecture
+
+TribeTask follows a **clean, layered architecture** inside the Next.js App Router:
+
+```
+User Request
+    ↓
+Next.js App Router (Page / Layout components)
+    ↓
+Server Components / Server Actions
+    ↓
+Service Layer (business logic — pure functions)
+    ↓
+Repository Layer (Supabase data access)
+    ↓
+Supabase (PostgreSQL + Realtime + Auth + Storage)
+```
+
+### Layers
+
+| Layer | Location | Responsibility |
+|---|---|---|
+| **UI / Pages** | `app/` | Rendering, routing, layouts |
+| **Components** | `components/` | Reusable, accessible UI primitives |
+| **Server Actions** | `app/**/actions.ts` | Form mutations, secure server-side ops |
+| **Services** | `lib/services/` | Business logic, task distribution algorithms |
+| **Repositories** | `lib/repositories/` | All Supabase queries isolated here |
+| **Types** | `lib/types/` | Shared TypeScript interfaces and Zod schemas |
+| **Hooks** | `hooks/` | Client-side data fetching and subscriptions |
+
+### Key Design Rules
+- **No direct Supabase calls in components** — always go through a repository or server action.
+- **Server Components by default** — use `"use client"` only when interactivity requires it.
+- **Row-Level Security (RLS) on all tables** — security enforced at the database layer.
+- **Typed end-to-end** — generate Supabase types with `supabase gen types typescript`.
+
+---
+
+## 4. Core Features
+
+### 4.1 Task Distribution (Schedule-Based)
+- Households define recurring chores (daily, weekly, monthly).
+- A **distribution algorithm** in `lib/services/distribution.ts` assigns tasks:
+  - Round-robin among household members.
+  - Weighted by member availability (optional preference settings).
+  - Avoids assigning same chore to the same person consecutively.
+- Scheduled via **Supabase Edge Functions** (cron) + `pg_cron` to generate task instances at the start of each period.
+- Members can view their personal task queue and the full household schedule.
+
+**Business Rules:**
+- A task must always have an `assigned_to` or be in `unassigned` state.
+- Recurring tasks auto-generate instances; one-off tasks are manually created.
+- Tasks not completed by their due date auto-escalate to `overdue` status.
+
+---
+
+### 4.2 Claiming Tasks
+- Members can **claim** any `unassigned` task from the shared pool.
+- A task in `assigned` state can be **released** back to the pool by its owner (before due date).
+- Claiming is optimistic on the UI, confirmed via Supabase Realtime.
+- A task can only be claimed by one member at a time (enforced by DB constraint + RLS).
+
+**States:** `unassigned` → `assigned` → `in_progress` → `completed` | `overdue`
+
+---
+
+### 4.3 Nudges
+- Any household member can send a **nudge** to the person assigned to an overdue or upcoming task.
+- Nudges are rate-limited: max 1 nudge per task per member per 24 hours.
+- Delivered via:
+  - In-app notification (Supabase Realtime `notifications` table).
+  - Web Push notification (if the member has granted push permission).
+- Nudges are friendly by default (preset messages) with optional custom text (max 120 chars).
+
+---
+
+### 4.4 Leaderboard
+- A per-household **monthly leaderboard** ranks members by:
+  1. Tasks completed on time (primary)
+  2. Tasks completed early (tiebreaker)
+  3. Streak (consecutive weeks with all tasks done)
+- Scores reset on the 1st of each month (historical data preserved).
+- Displayed as a ranked list with avatars, points, and badges.
+- Badges awarded for milestones (e.g., "Streak King 🔥", "Early Bird 🐦", "Reliable Rockstar ⭐").
+
+---
+
+### 4.5 Reminders
+- Automatic reminders sent at configurable intervals before a task's due date.
+- Default schedule: 24 hours before, 2 hours before.
+- Members configure reminder preferences per household in their profile settings.
+- Delivery channels: in-app notification + email (via Supabase Auth email / Resend) + Web Push.
+- Reminder jobs run via **Supabase Edge Function** on a cron schedule (every 15 min).
+
+---
+
+## 5. Database Schema
+
+All tables live in the `public` schema. RLS is enabled on every table.
+
+### 5.1 Entity Relationship Overview
+
+```
+users ──< household_members >── households
+households ──< chore_templates
+households ──< task_instances ──< nudges
+task_instances ──< task_completions
+users ──< notifications
+households ──< leaderboard_entries
+```
+
+---
+
+### 5.2 Table Definitions
+
+```sql
+-- ─────────────────────────────────────────────
+-- HOUSEHOLDS
+-- ─────────────────────────────────────────────
+CREATE TABLE households (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT NOT NULL,
+  invite_code TEXT UNIQUE NOT NULL DEFAULT substr(md5(random()::text), 1, 8),
+  created_by  UUID NOT NULL REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ─────────────────────────────────────────────
+-- HOUSEHOLD MEMBERS  (junction: user ↔ household)
+-- ─────────────────────────────────────────────
+CREATE TABLE household_members (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  user_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role         TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member')),
+  display_name TEXT,
+  avatar_url   TEXT,
+  points       INT NOT NULL DEFAULT 0,
+  joined_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (household_id, user_id)
+);
+
+-- ─────────────────────────────────────────────
+-- CHORE TEMPLATES  (recurring chore definitions)
+-- ─────────────────────────────────────────────
+CREATE TABLE chore_templates (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id   UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  title          TEXT NOT NULL,
+  description    TEXT,
+  recurrence     TEXT NOT NULL CHECK (recurrence IN ('daily', 'weekly', 'biweekly', 'monthly', 'one_off')),
+  recurrence_day INT,              -- 0=Sunday … 6=Saturday for weekly; 1-31 for monthly
+  duration_mins  INT,              -- estimated effort
+  points_value   INT NOT NULL DEFAULT 10,
+  created_by     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  is_active      BOOLEAN NOT NULL DEFAULT true
+);
+
+-- ─────────────────────────────────────────────
+-- TASK INSTANCES  (generated from templates or one-off)
+-- ─────────────────────────────────────────────
+CREATE TABLE task_instances (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id   UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  template_id    UUID REFERENCES chore_templates(id) ON DELETE SET NULL,
+  title          TEXT NOT NULL,
+  description    TEXT,
+  assigned_to    UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  status         TEXT NOT NULL DEFAULT 'unassigned'
+                   CHECK (status IN ('unassigned', 'assigned', 'in_progress', 'completed', 'overdue', 'skipped')),
+  due_at         TIMESTAMPTZ NOT NULL,
+  points_value   INT NOT NULL DEFAULT 10,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Index for fast household task lookups
+CREATE INDEX idx_task_instances_household_status ON task_instances(household_id, status);
+CREATE INDEX idx_task_instances_assigned_to      ON task_instances(assigned_to);
+CREATE INDEX idx_task_instances_due_at           ON task_instances(due_at);
+
+-- ─────────────────────────────────────────────
+-- TASK COMPLETIONS
+-- ─────────────────────────────────────────────
+CREATE TABLE task_completions (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id         UUID NOT NULL REFERENCES task_instances(id) ON DELETE CASCADE,
+  completed_by    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  completed_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  photo_url       TEXT,           -- optional proof photo
+  notes           TEXT,
+  was_early       BOOLEAN NOT NULL DEFAULT false,
+  points_awarded  INT NOT NULL DEFAULT 0
+);
+
+-- ─────────────────────────────────────────────
+-- NUDGES
+-- ─────────────────────────────────────────────
+CREATE TABLE nudges (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id     UUID NOT NULL REFERENCES task_instances(id) ON DELETE CASCADE,
+  from_user   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  to_user     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  message     TEXT,              -- optional custom message, max 120 chars
+  sent_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT nudge_rate_limit UNIQUE (task_id, from_user)  -- 1 nudge per person per task
+);
+
+-- ─────────────────────────────────────────────
+-- NOTIFICATIONS  (in-app)
+-- ─────────────────────────────────────────────
+CREATE TABLE notifications (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type        TEXT NOT NULL CHECK (type IN ('nudge', 'reminder', 'assignment', 'completion', 'badge', 'system')),
+  title       TEXT NOT NULL,
+  body        TEXT,
+  data        JSONB,             -- contextual payload (task_id, household_id, etc.)
+  is_read     BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read) WHERE is_read = false;
+
+-- ─────────────────────────────────────────────
+-- LEADERBOARD ENTRIES  (monthly snapshots)
+-- ─────────────────────────────────────────────
+CREATE TABLE leaderboard_entries (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  household_id    UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  period_year     INT NOT NULL,   -- e.g. 2026
+  period_month    INT NOT NULL,   -- 1–12
+  tasks_completed INT NOT NULL DEFAULT 0,
+  tasks_early     INT NOT NULL DEFAULT 0,
+  streak_weeks    INT NOT NULL DEFAULT 0,
+  total_points    INT NOT NULL DEFAULT 0,
+  rank            INT,
+  badges          TEXT[] DEFAULT '{}',
+  UNIQUE (household_id, user_id, period_year, period_month)
+);
+
+-- ─────────────────────────────────────────────
+-- MEMBER PREFERENCES  (reminder settings)
+-- ─────────────────────────────────────────────
+CREATE TABLE member_preferences (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id               UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  household_id          UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  reminder_hours_before INT[] NOT NULL DEFAULT '{24, 2}',  -- hours before due
+  push_enabled          BOOLEAN NOT NULL DEFAULT false,
+  email_enabled         BOOLEAN NOT NULL DEFAULT true,
+  nudge_enabled         BOOLEAN NOT NULL DEFAULT true,
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, household_id)
+);
+```
+
+---
+
+### 5.3 Row-Level Security Policies (Examples)
+
+```sql
+-- Users can only see tasks in households they belong to
+ALTER TABLE task_instances ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Members can view household tasks"
+  ON task_instances FOR SELECT
+  USING (
+    household_id IN (
+      SELECT household_id FROM household_members WHERE user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Members can update their own assigned tasks"
+  ON task_instances FOR UPDATE
+  USING (assigned_to = auth.uid() OR
+    household_id IN (
+      SELECT household_id FROM household_members
+      WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
+    )
+  );
+
+-- Users only see their own notifications
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Own notifications only"
+  ON notifications FOR ALL
+  USING (user_id = auth.uid());
+```
+
+---
+
+### 5.4 Realtime Subscriptions
+
+Enable Realtime on these tables in the Supabase dashboard:
+
+| Table | Events | Use Case |
+|---|---|---|
+| `task_instances` | `INSERT`, `UPDATE` | Live task board updates |
+| `notifications` | `INSERT` | Instant in-app nudges & reminders |
+| `leaderboard_entries` | `UPDATE` | Live score updates |
+
+---
+
+## 6. Accessibility Standards
+
+TribeTask targets **WCAG 2.1 Level AA** compliance.
+
+### Requirements
+
+| Area | Standard |
+|---|---|
+| **Color Contrast** | Minimum 4.5:1 for normal text, 3:1 for large text |
+| **Keyboard Navigation** | All interactive elements reachable and operable via keyboard |
+| **Focus Indicators** | Visible focus ring on all focusable elements (Tailwind `focus-visible:ring`) |
+| **ARIA** | Semantic HTML first; ARIA labels on icons, modals, live regions |
+| **Screen Reader** | Test with VoiceOver (macOS/iOS) and NVDA (Windows) |
+| **Motion** | Respect `prefers-reduced-motion` — disable animations when set |
+| **Forms** | All inputs have associated `<label>`, error messages linked via `aria-describedby` |
+| **Images** | All `<img>` tags have meaningful `alt` text; decorative images use `alt=""` |
+| **Touch Targets** | Minimum 44×44px for all interactive elements (mobile) |
+| **Language** | `<html lang="en">` set; use `lang` attribute on mixed-language content |
+
+### Implementation Guidelines
+
+```tsx
+// ✅ Correct: Accessible icon button
+<button
+  aria-label="Mark task as complete"
+  className="focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
+>
+  <CheckIcon aria-hidden="true" />
+</button>
+
+// ✅ Correct: Live region for real-time updates
+<div aria-live="polite" aria-atomic="true" className="sr-only">
+  {latestNotification}
+</div>
+
+// ✅ Correct: Form field with error
+<label htmlFor="task-title">Task Title</label>
+<input
+  id="task-title"
+  aria-describedby="task-title-error"
+  aria-invalid={!!error}
+/>
+{error && <p id="task-title-error" role="alert">{error}</p>}
+```
+
+---
+
+## 7. Engineering Best Practices
+
+### Code Style
+- **TypeScript strict mode** enabled (`"strict": true` in `tsconfig.json`).
+- **No `any` types** — use generics or `unknown` with type guards.
+- **Zod schemas** validate all external input (API, forms, env vars).
+- **ESLint** with `eslint-config-next` + `eslint-plugin-jsx-a11y`.
+- **Prettier** for consistent formatting (run on save).
+
+### Component Rules
+- Components are **pure and composable** — no side effects, no direct DB calls.
+- Use **Server Components** for data-fetching; `"use client"` only for interactivity.
+- Extract reusable UI to `components/ui/` (Button, Card, Badge, Modal, etc.).
+- Follow **atomic design**: atoms → molecules → organisms → pages.
+
+### Performance
+- Use **Next.js Image** (`<Image>`) for all images — automatic optimization.
+- Prefer **static generation** (`generateStaticParams`) for public pages.
+- **Paginate** task lists — never load unbounded datasets.
+- Debounce search/filter inputs.
+
+### Security
+- **Never expose** Supabase service role key client-side.
+- Validate and sanitize all user input server-side (Zod + server actions).
+- **RLS enforced** on all tables — never trust client-sent user IDs.
+- Use Supabase **Auth helpers** for Next.js (`@supabase/ssr`).
+- Rate-limit API routes with middleware (e.g., Upstash Rate Limit).
+- `.env.local` never committed — use Vercel environment variables.
+
+### Testing Strategy
+
+| Type | Tool | Coverage Target |
+|---|---|---|
+| Unit | Vitest | Services, utilities, Zod schemas |
+| Component | React Testing Library | All reusable UI components |
+| Integration | Vitest + Supabase local | Repository layer, server actions |
+| E2E | Playwright | Critical flows (auth, task claim, completion) |
+
+---
+
+## 8. Folder Structure
+
+```
+tribetask/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/page.tsx
+│   │   └── signup/page.tsx
+│   ├── (dashboard)/
+│   │   ├── layout.tsx
+│   │   ├── dashboard/page.tsx          # Task board
+│   │   ├── leaderboard/page.tsx
+│   │   ├── notifications/page.tsx
+│   │   └── settings/page.tsx
+│   ├── api/
+│   │   ├── webhooks/
+│   │   └── push/route.ts               # Web Push subscription endpoint
+│   ├── layout.tsx
+│   └── globals.css
+│
+├── components/
+│   ├── ui/                             # Atomic, reusable primitives
+│   │   ├── Button.tsx
+│   │   ├── Card.tsx
+│   │   ├── Badge.tsx
+│   │   ├── Modal.tsx
+│   │   └── Avatar.tsx
+│   ├── tasks/
+│   │   ├── TaskCard.tsx
+│   │   ├── TaskList.tsx
+│   │   ├── ClaimButton.tsx
+│   │   └── NudgeButton.tsx
+│   ├── leaderboard/
+│   │   └── LeaderboardTable.tsx
+│   └── notifications/
+│       └── NotificationBell.tsx
+│
+├── hooks/
+│   ├── useTasks.ts                     # Realtime task subscription
+│   ├── useNotifications.ts
+│   └── useLeaderboard.ts
+│
+├── lib/
+│   ├── supabase/
+│   │   ├── client.ts                   # Browser Supabase client
+│   │   ├── server.ts                   # Server Supabase client (SSR)
+│   │   └── types.ts                    # Generated DB types (supabase gen types)
+│   ├── repositories/
+│   │   ├── tasks.repository.ts
+│   │   ├── households.repository.ts
+│   │   ├── notifications.repository.ts
+│   │   └── leaderboard.repository.ts
+│   ├── services/
+│   │   ├── distribution.service.ts     # Task assignment algorithm
+│   │   ├── nudge.service.ts
+│   │   ├── reminder.service.ts
+│   │   └── leaderboard.service.ts
+│   ├── types/
+│   │   ├── task.types.ts
+│   │   ├── household.types.ts
+│   │   └── notification.types.ts
+│   └── validations/
+│       ├── task.schema.ts              # Zod schemas
+│       └── household.schema.ts
+│
+├── supabase/
+│   ├── migrations/                     # SQL migration files
+│   ├── functions/                      # Edge Functions (reminders, distribution)
+│   │   ├── generate-tasks/index.ts
+│   │   └── send-reminders/index.ts
+│   └── seed.sql
+│
+├── public/
+├── .env.local.example
+├── next.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+└── AGENTS.md
+```
+
+---
+
+## 9. Environment Variables
+
+```bash
+# .env.local.example
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>   # server-side only
+
+# Web Push (VAPID keys — generate with web-push library)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<vapid-public-key>
+VAPID_PRIVATE_KEY=<vapid-private-key>
+VAPID_SUBJECT=mailto:hello@tribetask.app
+
+# Email (optional — Resend)
+RESEND_API_KEY=<resend-api-key>
+EMAIL_FROM=noreply@tribetask.app
+
+# App
+NEXT_PUBLIC_APP_URL=https://tribetask.app
+```
+
+---
+
+## 10. Deployment
+
+### Vercel Setup
+1. Connect GitHub repo to Vercel.
+2. Set environment variables in Vercel dashboard (never in code).
+3. Enable **Vercel Edge Middleware** for auth session handling.
+4. Configure **preview deployments** for every pull request.
+
+### Supabase Setup
+1. Create project on [supabase.com](https://supabase.com).
+2. Run migrations: `supabase db push`.
+3. Enable Realtime on `task_instances`, `notifications`, `leaderboard_entries`.
+4. Deploy Edge Functions: `supabase functions deploy generate-tasks`.
+5. Schedule Edge Functions using Supabase **pg_cron**:
+   ```sql
+   -- Generate weekly tasks every Sunday at midnight UTC
+   SELECT cron.schedule('generate-weekly-tasks', '0 0 * * 0',
+     $$SELECT net.http_post(url := '<EDGE_FUNCTION_URL>/generate-tasks')$$);
+
+   -- Send reminders every 15 minutes
+   SELECT cron.schedule('send-reminders', '*/15 * * * *',
+     $$SELECT net.http_post(url := '<EDGE_FUNCTION_URL>/send-reminders')$$);
+   ```
+
+### CI/CD
+- **Lint & typecheck** run on every push (`next lint`, `tsc --noEmit`).
+- **Unit + integration tests** run on every PR (Vitest).
+- **E2E tests** (Playwright) run on merge to `main`.
+- Vercel auto-deploys `main` to production.
+
+---
+
+*Built with ❤️ by the TribeTask team. Powered by Next.js + Supabase + Vercel.*
