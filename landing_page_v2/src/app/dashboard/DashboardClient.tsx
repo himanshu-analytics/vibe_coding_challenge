@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import TopNav from "@/components/app/TopNav";
 import TribeView from "./TribeView";
@@ -45,7 +46,16 @@ const STATUS_TEXT: Record<string, string> = {
 export default function DashboardClient({
   userId, tribeId, tribeName, inviteCode, displayName, avatarColor, role,
 }: DashboardClientProps) {
-  const [view, setView] = useState<"my" | "tribe">("my");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [view, setView] = useState<"my" | "tribe">(
+    searchParams.get("view") === "tribe" ? "tribe" : "my"
+  );
+
+  function switchView(v: "my" | "tribe") {
+    setView(v);
+    router.replace(v === "tribe" ? "/dashboard?view=tribe" : "/dashboard", { scroll: false });
+  }
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -113,7 +123,7 @@ export default function DashboardClient({
         <div className="pt-[60px] min-h-screen">
           <div className="max-w-5xl mx-auto px-4 py-8">
             <div className="flex items-center gap-3 mb-8">
-              <button onClick={() => setView("my")} className="px-3 py-1.5 rounded-lg text-[13px] text-[#7c849a] hover:text-[#f0f2f8] hover:bg-[rgba(255,255,255,0.05)] transition-colors">My Tasks</button>
+              <button onClick={() => switchView("my")} className="px-3 py-1.5 rounded-lg text-[13px] text-[#7c849a] hover:text-[#f0f2f8] hover:bg-[rgba(255,255,255,0.05)] transition-colors">My Tasks</button>
               <button className="px-3 py-1.5 rounded-lg text-[13px] bg-[rgba(110,231,183,0.1)] text-[#6EE7B7] font-semibold">Tribe View</button>
             </div>
             <TribeView tribeId={tribeId} userId={userId} displayName={displayName} />
@@ -131,7 +141,7 @@ export default function DashboardClient({
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <button className="px-3 py-1.5 rounded-lg text-[13px] bg-[rgba(110,231,183,0.1)] text-[#6EE7B7] font-semibold">My Tasks</button>
-              <button onClick={() => setView("tribe")} className="px-3 py-1.5 rounded-lg text-[13px] text-[#7c849a] hover:text-[#f0f2f8] hover:bg-[rgba(255,255,255,0.05)] transition-colors">Tribe View</button>
+              <button onClick={() => switchView("tribe")} className="px-3 py-1.5 rounded-lg text-[13px] text-[#7c849a] hover:text-[#f0f2f8] hover:bg-[rgba(255,255,255,0.05)] transition-colors">Tribe View</button>
             </div>
             <button
               onClick={() => setShowCreate(true)}

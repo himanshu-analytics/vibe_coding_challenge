@@ -90,7 +90,7 @@ export default function TopNav({ tribeName, tribeId, displayName, avatarColor }:
 
       <nav className="hidden md:flex items-center gap-1 ml-4">
         <a href="/dashboard" className="px-3 py-1.5 rounded-lg text-[13px] text-[#7c849a] hover:text-[#f0f2f8] hover:bg-[rgba(255,255,255,0.05)] transition-colors">My Tasks</a>
-        <a href="/dashboard/tribe" className="px-3 py-1.5 rounded-lg text-[13px] text-[#7c849a] hover:text-[#f0f2f8] hover:bg-[rgba(255,255,255,0.05)] transition-colors">Tribe View</a>
+        <a href="/dashboard?view=tribe" className="px-3 py-1.5 rounded-lg text-[13px] text-[#7c849a] hover:text-[#f0f2f8] hover:bg-[rgba(255,255,255,0.05)] transition-colors">Tribe View</a>
         <a href="/settings" className="px-3 py-1.5 rounded-lg text-[13px] text-[#7c849a] hover:text-[#f0f2f8] hover:bg-[rgba(255,255,255,0.05)] transition-colors">Settings</a>
       </nav>
 

@@ -20,7 +20,7 @@ export default function Pricing() {
               <li className="text-[14px] flex items-center gap-[10px] text-[#7c849a]"><span className="text-[rgba(255,255,255,0.2)] font-bold text-[13px]">–</span> Load balancer analytics</li>
               <li className="text-[14px] flex items-center gap-[10px] text-[#7c849a]"><span className="text-[rgba(255,255,255,0.2)] font-bold text-[13px]">–</span> Priority support</li>
             </ul>
-            <a className="block w-full text-center border border-[rgba(255,255,255,0.07)] text-[#f0f2f8] bg-transparent font-sora font-semibold text-[14px] p-[14px] rounded-[10px] no-underline transition-colors duration-200 hover:border-[#6EE7B7] hover:bg-[#6EE7B7]/5" href="#">Get started free</a>
+            <a className="block w-full text-center border border-[rgba(255,255,255,0.07)] text-[#f0f2f8] bg-transparent font-sora font-semibold text-[14px] p-[14px] rounded-[10px] no-underline transition-colors duration-200 hover:border-[#6EE7B7] hover:bg-[#6EE7B7]/5" href="/auth/login">Get started free</a>
           </div>
           
           <div className="bg-gradient-to-br from-[#14171f] to-[#14171f] via-[#14171f] bg-[#14171f] border border-[rgba(110,231,183,0.4)] rounded-[20px] px-[32px] py-[36px] relative" style={{background: 'linear-gradient(160deg, rgba(110,231,183,0.06), #14171f)'}}>
@@ -37,7 +37,7 @@ export default function Pricing() {
               <li className="text-[14px] flex items-center gap-[10px]"><span className="text-[#6EE7B7] font-bold text-[13px]">✓</span> Streak tracking & leaderboard</li>
               <li className="text-[14px] flex items-center gap-[10px] text-[#7c849a]"><span className="text-[rgba(255,255,255,0.2)] font-bold text-[13px]">–</span> Priority support</li>
             </ul>
-            <a className="block w-full text-center bg-gradient-to-br from-[#6EE7B7] to-[#34d399] text-[#0d1a13] font-sora font-bold text-[15px] p-[14px] rounded-[10px] no-underline transition-all duration-200 hover:opacity-90 hover:-translate-y-[1px]" href="#">Start 14-day free trial</a>
+            <a className="block w-full text-center bg-gradient-to-br from-[#6EE7B7] to-[#34d399] text-[#0d1a13] font-sora font-bold text-[15px] p-[14px] rounded-[10px] no-underline transition-all duration-200 hover:opacity-90 hover:-translate-y-[1px]" href="/auth/login?plan=tribe">Start 14-day free trial</a>
           </div>
           
           <div className="bg-[#14171f] border border-[rgba(255,255,255,0.07)] rounded-[20px] px-[32px] py-[36px] relative">
@@ -53,7 +53,7 @@ export default function Pricing() {
               <li className="text-[14px] flex items-center gap-[10px]"><span className="text-[#6EE7B7] font-bold text-[13px]">✓</span> Priority support</li>
               <li className="text-[14px] flex items-center gap-[10px]"><span className="text-[#6EE7B7] font-bold text-[13px]">✓</span> Custom domain (coming soon)</li>
             </ul>
-            <a className="block w-full text-center border border-[rgba(255,255,255,0.07)] text-[#f0f2f8] bg-transparent font-sora font-semibold text-[14px] p-[14px] rounded-[10px] no-underline transition-colors duration-200 hover:border-[rgba(255,255,255,0.25)]" href="#">Contact us</a>
+            <a className="block w-full text-center border border-[rgba(255,255,255,0.07)] text-[#f0f2f8] bg-transparent font-sora font-semibold text-[14px] p-[14px] rounded-[10px] no-underline transition-colors duration-200 hover:border-[rgba(255,255,255,0.25)]" href="/auth/login?plan=community">Get started</a>
           </div>
         </div>
       </div>
