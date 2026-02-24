@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import TopNav from "@/components/app/TopNav";
 
 interface Member {
@@ -33,6 +34,8 @@ export default function SettingsClient({
   const [newName, setNewName] = useState(initialTribeName);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const searchParams = useSearchParams();
+  const upgradedPlan = searchParams.get("upgraded");
 
   const fetchSettings = useCallback(async () => {
     const res = await fetch(`/api/tribes/settings?tribe_id=${tribeId}`);
@@ -115,6 +118,16 @@ export default function SettingsClient({
         <div className="max-w-2xl mx-auto px-4 py-8">
           <h1 className="font-sora font-bold text-2xl text-[#f0f2f8] mb-1">Settings</h1>
           <p className="text-[#7c849a] text-sm mb-8">Manage your tribe and account</p>
+
+          {upgradedPlan && (
+            <div className="mb-4 p-4 bg-[rgba(110,231,183,0.08)] border border-[rgba(110,231,183,0.4)] rounded-xl flex items-center gap-3">
+              <span className="text-2xl">🎉</span>
+              <div>
+                <p className="text-[#6EE7B7] font-semibold text-sm">You're now on the {upgradedPlan.charAt(0).toUpperCase() + upgradedPlan.slice(1)} plan!</p>
+                <p className="text-[#7c849a] text-xs mt-0.5">Your subscription is active. Enjoy the new features.</p>
+              </div>
+            </div>
+          )}
 
           {msg && (
             <div className="mb-4 p-3 bg-[rgba(110,231,183,0.1)] border border-[rgba(110,231,183,0.3)] rounded-xl text-[#6EE7B7] text-sm">

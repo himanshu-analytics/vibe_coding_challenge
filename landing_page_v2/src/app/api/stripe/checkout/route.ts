@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     line_items: [{ price: STRIPE_PLANS[plan as keyof typeof STRIPE_PLANS].priceId, quantity: 1 }],
     customer_email: user.email,
     metadata: { tribe_id: tribeId, user_id: user.id, plan },
-    success_url: `${appUrl}/dashboard?upgraded=true`,
+    success_url: `${appUrl}/api/stripe/sync?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/settings`,
   });
 
