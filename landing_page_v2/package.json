@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@react-email/components": "^1.0.8",
+    "@react-email/render": "^1.1.2",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
     "next": "16.1.6",

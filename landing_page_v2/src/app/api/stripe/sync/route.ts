@@ -29,6 +29,11 @@ export async function GET(request: NextRequest) {
 
   const sub = await stripe.subscriptions.retrieve(session.subscription as string);
 
+  const rawPeriodEnd = (sub as unknown as { current_period_end: number | null | undefined }).current_period_end;
+  const currentPeriodEnd = rawPeriodEnd != null && isFinite(rawPeriodEnd)
+    ? new Date(rawPeriodEnd * 1000).toISOString()
+    : null;
+
   const admin = createAdminClient();
   await admin.from("subscriptions").upsert({
     tribe_id,
@@ -36,7 +41,7 @@ export async function GET(request: NextRequest) {
     stripe_subscription_id: session.subscription as string,
     plan,
     status: sub.status,
-    current_period_end: new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+    current_period_end: currentPeriodEnd,
   }, { onConflict: "tribe_id" });
 
   redirect(`/settings?upgraded=${plan}`);
