@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -71,6 +73,17 @@ export default function LoginPage() {
             >
               {loading ? "Sending..." : "Send magic link →"}
             </button>
+
+            {DEMO_MODE && (
+              <form action="/api/auth/demo-login" method="POST" className="mt-4">
+                <button
+                  type="submit"
+                  className="w-full bg-[#1c2030] border border-[rgba(255,255,255,0.1)] text-[#6EE7B7] font-sora font-semibold py-3 rounded-xl text-sm hover:border-[#6EE7B7] transition-colors"
+                >
+                  🎬 Try Demo (no email needed)
+                </button>
+              </form>
+            )}
           </form>
         ) : (
           <div className="bg-[#14171f] border border-[rgba(255,255,255,0.07)] rounded-2xl p-8 text-center">

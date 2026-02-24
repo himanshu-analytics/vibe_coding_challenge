@@ -59,6 +59,12 @@
 | `GET` | `/api/nudge` | 🔒 Session | Fetch incoming nudges for the current user (optionally scoped to `tribe_id`) |
 | `PATCH` | `/api/nudge` | 🔒 Session | Mark nudge(s) as read (accepts array of `nudgeIds`) |
 
+### Auth (API)
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `POST` | `/api/auth/demo-login` | **Public** | Signs in with pre-seeded demo credentials; only active when `NEXT_PUBLIC_DEMO_MODE=true`; redirects to `/dashboard` or `/onboarding` |
+
 ### Stripe / Billing
 
 | Method | Route | Auth | Description |
