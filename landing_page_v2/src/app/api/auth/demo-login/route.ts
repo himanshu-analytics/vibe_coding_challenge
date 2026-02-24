@@ -31,5 +31,5 @@ export async function POST(request: NextRequest) {
 
   const redirectTo = membership ? "/dashboard" : "/onboarding";
   const { origin } = new URL(request.url);
-  return NextResponse.redirect(`${origin}${redirectTo}`);
+  return NextResponse.redirect(`${origin}${redirectTo}`, { status: 303 });
 }
