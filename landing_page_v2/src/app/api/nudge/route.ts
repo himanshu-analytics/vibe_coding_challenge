@@ -23,14 +23,20 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
+  // Fetch task and verify tribeId matches the task's actual tribe
   const { data: task } = await admin
     .from("tasks")
-    .select("id, title, description, due_date, assigned_to, status")
+    .select("id, title, description, due_date, assigned_to, status, tribe_id")
     .eq("id", taskId)
     .single();
 
   if (!task) {
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
+  }
+
+  // Security: ensure provided tribeId matches the task's actual tribe
+  if (task.tribe_id !== tribeId) {
+    return NextResponse.json({ error: "Task does not belong to this tribe" }, { status: 403 });
   }
 
   if (!task.assigned_to) {
@@ -39,6 +45,18 @@ export async function POST(request: NextRequest) {
 
   if (task.assigned_to === user.id) {
     return NextResponse.json({ error: "Cannot nudge yourself" }, { status: 400 });
+  }
+
+  // Security: verify the requester is actually a member of this tribe
+  const { data: senderMember } = await admin
+    .from("tribe_members")
+    .select("display_name")
+    .eq("tribe_id", tribeId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!senderMember) {
+    return NextResponse.json({ error: "You are not a member of this tribe" }, { status: 403 });
   }
 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -52,13 +70,6 @@ export async function POST(request: NextRequest) {
   if (count && count > 0) {
     return NextResponse.json({ error: "Rate limit: 1 nudge per task per hour" }, { status: 429 });
   }
-
-  const { data: senderMember } = await admin
-    .from("tribe_members")
-    .select("display_name")
-    .eq("tribe_id", tribeId)
-    .eq("user_id", user.id)
-    .single();
 
   const { data: recipientMember } = await admin
     .from("tribe_members")
