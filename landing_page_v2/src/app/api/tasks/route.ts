@@ -19,13 +19,9 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("tasks")
-    .select(`
-      *,
-      assignee:tribe_members!tasks_assigned_to_fkey(display_name, avatar_color),
-      creator:tribe_members!tasks_created_by_fkey(display_name, avatar_color)
-    `)
+    .select("*")
     .eq("tribe_id", tribeId)
-    .order("due_date", { ascending: true })
+    .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
   if (view === "my") {

@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 
+  if (!task.assigned_to) {
+    return NextResponse.json({ error: "Task has no assignee to nudge" }, { status: 400 });
+  }
+
   if (task.assigned_to === user.id) {
     return NextResponse.json({ error: "Cannot nudge yourself" }, { status: 400 });
   }
@@ -77,8 +81,8 @@ export async function POST(request: NextRequest) {
 
   if (recipientUser?.user?.email) {
     try {
-      await getResend().emails.send({
-        from: "TribeTask <noreply@tribetask.app>",
+      const emailResult = await getResend().emails.send({
+        from: "TribeTask <no-reply@tribetask.himanshuagrawal.online>",
         to: recipientUser.user.email,
         subject: `👋 ${senderMember?.display_name || "A teammate"} nudged you about: ${task.title}`,
         react: NudgeEmail({
@@ -90,7 +94,16 @@ export async function POST(request: NextRequest) {
           dashboardLink: `${appUrl}/dashboard`,
         }),
       });
-    } catch (_) {}
+      if (emailResult.error) {
+        console.error("[nudge] Resend error:", emailResult.error);
+      } else {
+        console.log("[nudge] Email sent to", recipientUser.user.email, "id:", emailResult.data?.id);
+      }
+    } catch (e) {
+      console.error("[nudge] Email exception:", e);
+    }
+  } else {
+    console.warn("[nudge] No email for recipient user_id:", task.assigned_to);
   }
 
   return NextResponse.json({ success: true });

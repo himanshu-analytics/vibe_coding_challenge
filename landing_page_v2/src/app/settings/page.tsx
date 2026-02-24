@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SettingsClient from "./SettingsClient";
@@ -20,14 +21,16 @@ export default async function SettingsPage() {
   const tribe = (Array.isArray(membership.tribes) ? membership.tribes[0] : membership.tribes) as { id: string; name: string; invite_code: string } | null;
 
   return (
-    <SettingsClient
-      userId={user.id}
-      tribeId={membership.tribe_id}
-      tribeName={tribe?.name || ""}
-      inviteCode={tribe?.invite_code || ""}
-      displayName={membership.display_name}
-      avatarColor={membership.avatar_color}
-      role={membership.role as "owner" | "member"}
-    />
+    <Suspense fallback={<div className="min-h-screen bg-[#0d0f14]" />}>
+      <SettingsClient
+        userId={user.id}
+        tribeId={membership.tribe_id}
+        tribeName={tribe?.name || ""}
+        inviteCode={tribe?.invite_code || ""}
+        displayName={membership.display_name}
+        avatarColor={membership.avatar_color}
+        role={membership.role as "owner" | "member"}
+      />
+    </Suspense>
   );
 }
