@@ -14,13 +14,12 @@ export default function Hero() {
           Your tribe runs smoother <span className="bg-gradient-to-br from-[#6EE7B7] to-[#818CF8] bg-clip-text text-transparent">together</span>
         </h1>
         
-        <p className="fade-up delay-2 text-[18px] text-[#7c849a] max-w-[520px] mx-auto mb-[40px] leading-[1.7]">
+        <p className="fade-up delay-2 text-[18px] text-[#7c849a] max-w-[540px] mx-auto mb-[40px] leading-[1.7]">
           Assign chores, grab tasks, nudge teammates — whether it's your family, roommates, or anyone sharing a space.
         </p>
         
-        <div className="fade-up delay-3 flex gap-[14px] justify-center flex-wrap mb-[60px]">
-          <a className="bg-gradient-to-br from-[#6EE7B7] to-[#34d399] text-[#071a10] font-sora font-bold text-[16px] px-[32px] py-[14px] rounded-[12px] no-underline transition-all duration-200 hover:opacity-90 hover:-translate-y-[2px] inline-block" href="/auth/login">Start for free →</a>
-          <a className="border border-[rgba(255,255,255,0.07)] text-[#f0f2f8] bg-transparent font-sora font-semibold text-[16px] px-[32px] py-[14px] rounded-[12px] no-underline transition-colors duration-200 hover:border-[rgba(255,255,255,0.25)] inline-block" href="#how">See how it works</a>
+        <div className="fade-up delay-3 flex justify-center mb-[60px]">
+          <a className="bg-gradient-to-br from-[#6EE7B7] to-[#34d399] text-[#071a10] font-sora font-bold text-[16px] px-[40px] py-[16px] rounded-[12px] no-underline transition-all duration-200 hover:opacity-90 hover:-translate-y-[2px] inline-block" href="/auth/login">Start for free →</a>
         </div>
 
         <div className="fade-up delay-4 max-w-[860px] mx-auto bg-[#14171f] border border-[rgba(255,255,255,0.07)] rounded-[20px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)] relative z-[2]">
