@@ -8,6 +8,8 @@
 
 **URL**: https://tribetask.vercel.app
 
+> ⚡ **Instant access**: Navigate to **https://tribetask.vercel.app/demo** — auto-signs in and redirects directly to the app. No clicks needed.
+
 ---
 
 ## Step 0: Access the Demo
