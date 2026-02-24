@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend } from "@/lib/resend";
+import { render } from "@react-email/render";
 import NudgeEmail from "@/emails/NudgeEmail";
 
 export const dynamic = "force-dynamic";
@@ -81,18 +82,20 @@ export async function POST(request: NextRequest) {
 
   if (recipientUser?.user?.email) {
     try {
+      const emailHtml = await render(NudgeEmail({
+        senderName: senderMember?.display_name || "A teammate",
+        recipientName: recipientMember?.display_name || "there",
+        taskTitle: task.title,
+        taskDescription: task.description,
+        dueDate: task.due_date,
+        dashboardLink: `${appUrl}/dashboard`,
+      }));
+
       const emailResult = await getResend().emails.send({
         from: "TribeTask <no-reply@tribetask.himanshuagrawal.online>",
         to: recipientUser.user.email,
         subject: `👋 ${senderMember?.display_name || "A teammate"} nudged you about: ${task.title}`,
-        react: NudgeEmail({
-          senderName: senderMember?.display_name || "A teammate",
-          recipientName: recipientMember?.display_name || "there",
-          taskTitle: task.title,
-          taskDescription: task.description,
-          dueDate: task.due_date,
-          dashboardLink: `${appUrl}/dashboard`,
-        }),
+        html: emailHtml,
       });
       if (emailResult.error) {
         console.error("[nudge] Resend error:", emailResult.error);
