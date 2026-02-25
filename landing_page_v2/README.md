@@ -2,52 +2,8 @@
 
 A household chore management SaaS — built with Next.js 16, Supabase, Stripe, and Resend.
 
----
-
-## 🎬 Demo Walkthrough
-
-A full end-to-end flow from tribe creation to plan upgrade:
-
-### 1. Sign Up / Log In
-- Visit the app and enter your email on the login page.
-- Click the magic link in your inbox.
-- First-time users land on **Onboarding**.
-
-### 2. Create a Tribe
-- On Onboarding, choose **"Create a new tribe"**, enter a tribe name, and submit.
-- You're now the tribe admin and land on the **Dashboard**.
-- A welcome email is sent to your inbox via Resend.
-
-### 3. Invite a Teammate
-- Go to **Settings → Tribe Settings**.
-- Copy the **Invite Code**.
-- Share it with a teammate — they sign up, choose **"Join a tribe"** on Onboarding, and enter the code.
-
-### 4. Add Tasks
-- On the Dashboard, click **"+ New Task"**.
-- Fill in the task title, optional description, due date, and assign it to a tribe member.
-- The task appears in the **Tribe View** board for all members.
-
-### 5. Reassign / Grab a Task
-- Any member can click **"Grab"** on an unassigned task to self-assign it.
-- Admins can reassign tasks using the assignee dropdown on any task card.
-
-### 6. Send a Nudge
-- On a task assigned to someone else, click **"Nudge"**.
-- The assignee receives an email notification (rate-limited to 1 nudge per task per hour).
-- A nudge badge appears in the top nav when you have unread nudges.
-
-### 7. Mark Nudge as Read
-- Click the nudge bell icon in the navbar.
-- View incoming nudges and click **"Mark all read"** to clear the badge.
-
-### 8. Upgrade Your Plan
-- Go to **Settings → Billing**.
-- Click **"Upgrade to Tribe"** ($6/mo) or **"Upgrade to Community"** ($15/mo).
-- You're redirected to Stripe Checkout — complete payment.
-- On success, your plan updates automatically in the Settings page.
-
----
+## Demo - Loom Video link
+[Demo Video](https://www.loom.com/share/90c17419e9594f169c7c8605d96050a7)
 
 ## Local Development
 
