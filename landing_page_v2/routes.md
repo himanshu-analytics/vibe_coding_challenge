@@ -23,7 +23,6 @@
 | `/` | **Public** | Marketing landing page |
 | `/auth/login` | **Public** | Magic-link login / sign-up form |
 | `/auth/callback` | **Public** | Supabase OAuth/magic-link exchange (redirects to `/dashboard` or `/onboarding`) |
-| `/demo` | **Public** | Auto-submits demo login form on mount; instant reviewer access when `NEXT_PUBLIC_DEMO_MODE=true` |
 | `/onboarding` | **Protected** | New-user onboarding — create or join a tribe |
 | `/dashboard` | **Protected** | Primary app view — tribe task board with nudge controls |
 | `/settings` | **Protected** | Account & billing settings; plan upgrade via Stripe |
@@ -60,12 +59,6 @@
 | `GET` | `/api/nudge` | 🔒 Session | Fetch incoming nudges for the current user (optionally scoped to `tribe_id`) |
 | `PATCH` | `/api/nudge` | 🔒 Session | Mark nudge(s) as read (accepts array of `nudgeIds`) |
 
-### Auth (API)
-
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| `POST` | `/api/auth/demo-login` | **Public** | Signs in with pre-seeded demo credentials; only active when `NEXT_PUBLIC_DEMO_MODE=true`; redirects to `/dashboard` or `/onboarding` |
-
 ### Stripe / Billing
 
 | Method | Route | Auth | Description |
@@ -98,7 +91,7 @@ Unprotected: /, /auth/*, /api/*, static assets
 
 The middleware runs on every request (excluding static assets), checks the Supabase session, and redirects unauthenticated users to `/auth/login`.
 
-> **Note on API auth**: `/api/*` routes are not middleware-protected (to allow unauthenticated requests like Stripe webhooks). Each protected API handler enforces auth independently by calling `supabase.auth.getUser()` and returning `401` if no valid session is present. The only intentionally public API routes are `/api/stripe/webhook` (verified by Stripe signature) and `/api/auth/demo-login` (guarded by `NEXT_PUBLIC_DEMO_MODE` flag).
+> **Note on API auth**: `/api/*` routes are not middleware-protected (to allow unauthenticated requests like Stripe webhooks). Each protected API handler enforces auth independently by calling `supabase.auth.getUser()` and returning `401` if no valid session is present. The only intentionally public API route is `/api/stripe/webhook` (verified by Stripe signature).
 
 ---
 

@@ -75,22 +75,7 @@ STRIPE_TRIBE_PRICE_ID=        # Must be price_xxx, not prod_xxx
 STRIPE_COMMUNITY_PRICE_ID=    # Must be price_xxx, not prod_xxx
 
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Optional: Demo mode (no email needed for login)
-NEXT_PUBLIC_DEMO_MODE=true
-DEMO_USER_EMAIL=demo@yourdomain.com
-DEMO_USER_PASSWORD=your-demo-password
 ```
-
-### Demo Mode Setup
-
-When `NEXT_PUBLIC_DEMO_MODE=true`, a **"🎬 Try Demo"** button appears on the login page — reviewers can access the full app without needing a real email inbox.
-
-**One-time Supabase setup:**
-1. In Supabase Dashboard → **Authentication → Users**, click **"Add user"**
-2. Enter `DEMO_USER_EMAIL` + `DEMO_USER_PASSWORD` (use a strong password)
-3. Under **Authentication → Providers**, ensure **Email** provider has **"Confirm email"** disabled (or confirm the user manually)
-4. Optionally pre-seed the demo user with a tribe so they land on `/dashboard` instead of `/onboarding`
 
 ---
 
